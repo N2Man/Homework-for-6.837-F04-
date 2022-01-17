@@ -1,14 +1,21 @@
-#include "image.h"
-#include "matrix.h"
-#include "vectors.h"
-#include <vector>
+#pragma once
+//#define _CRT_SECURE_NO_WARNINGS
+#include<vector>
+#include"matrix.h"
+#include"image.h"
 
-class IFS {
+class IFS
+{
+private:
+	int n;
+	vector<Matrix> transformation;
+	vector<float> probability;
+
 public:
-	int n; //the number of transformations
-	vector<Matrix> trans;
-	vector<float> probs;
-	IFS() : n(0), trans(0), probs(0) {}
-	void input(char *filename);
-	void render(Image &img, int points, int iterations);
+	IFS();
+	~IFS();
+	void readFile(char* filename);
+	void render(Image& image, float num_points, float num_iters);
+	float readFloat(FILE* file);
+
 };

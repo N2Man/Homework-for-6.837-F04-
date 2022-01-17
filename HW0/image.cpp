@@ -37,7 +37,8 @@ void Image::SaveTGA(const char* filename) const {
     // must end in .tga
     const char* ext = &filename[strlen(filename) - 4];
     assert(!strcmp(ext, ".tga"));
-    FILE* file = fopen(filename, "wb");
+    FILE* file;
+    fopen_s(&file, filename, "wb");
     // misc header information
     for (int i = 0; i < 18; i++) {
         unsigned char tmp;
@@ -69,7 +70,8 @@ Image* Image::LoadTGA(const char* filename) {
     // must end in .tga
     const char* ext = &filename[strlen(filename) - 4];
     assert(!strcmp(ext, ".tga"));
-    FILE* file = fopen(filename, "rb");
+    FILE* file;
+    fopen_s(&file, filename, "rb");
     // misc header information
     int width = 0;
     int height = 0;
@@ -113,7 +115,8 @@ void Image::SavePPM(const char* filename) const {
     // must end in .ppm
     const char* ext = &filename[strlen(filename) - 4];
     assert(!strcmp(ext, ".ppm"));
-    FILE* file = fopen(filename, "w");
+    FILE* file;
+    fopen_s(&file, filename, "w");
     // misc header information
     assert(file != NULL);
     fprintf(file, "P6\n");
@@ -138,7 +141,8 @@ Image* Image::LoadPPM(const char* filename) {
     // must end in .ppm
     const char* ext = &filename[strlen(filename) - 4];
     assert(!strcmp(ext, ".ppm"));
-    FILE* file = fopen(filename, "rb");
+    FILE* file;
+    fopen_s(&file, filename, "rb");
     // misc header information
     int width = 0;
     int height = 0;
@@ -148,7 +152,7 @@ Image* Image::LoadPPM(const char* filename) {
     fgets(tmp, 100, file);
     assert(tmp[0] == '#');
     fgets(tmp, 100, file);
-    sscanf(tmp, "%d %d", &width, &height);
+    sscanf_s(tmp, "%d %d", &width, &height);
     fgets(tmp, 100, file);
     assert(strstr(tmp, "255"));
     // the data

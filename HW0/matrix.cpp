@@ -346,7 +346,7 @@ void Matrix::Read(FILE* F) {
     assert(F != NULL);
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 4; x++) {
-            int scanned = fscanf(F, "%f", &data[y][x]);
+            int scanned = fscanf_s(F, "%f", &data[y][x]);
             assert(scanned == 1);
         }
     }
@@ -359,7 +359,7 @@ void Matrix::Read3x3(FILE* F) {
         if (y == 2) continue;
         for (int x = 0; x < 4; x++) {
             if (x == 2) continue;
-            int scanned = fscanf(F, "%f", &data[y][x]);
+            int scanned = fscanf_s(F, "%f", &data[y][x]);
             assert(scanned == 1);
         }
     }
