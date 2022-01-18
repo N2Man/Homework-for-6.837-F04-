@@ -1,8 +1,8 @@
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
-#include<vector>
-#include"matrix.h"
-#include"image.h"
+#include <vector>
+#include "matrix.h"
+#include "image.h"
 
 class IFS {
 public:

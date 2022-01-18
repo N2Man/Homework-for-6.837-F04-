@@ -1,6 +1,6 @@
 #include "ifs.h"
 #include <stdio.h>
-#include<cmath>
+#include <cmath>
 
 IFS::IFS() {
 	this->n = 0;
