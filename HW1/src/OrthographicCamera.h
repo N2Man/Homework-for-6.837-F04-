@@ -2,7 +2,7 @@
 #include "camera.h"
 #include "matrix.h"
 
-class OrthographicCamera :public camera {
+class OrthographicCamera :public Camera {
 private:
 	Vec3f center;
 	Vec3f up;
@@ -28,6 +28,7 @@ public:
 		Vec3f dx = size * hori;
 		Vec3f dy = size * up;
 		Vec3f pointToImage = center - 0.5 * dx - 0.5 * dy + point.x() * dx + point.y() * dy;
+		return Ray(pointToImage, dir);
 	}
 	float getTMin() const {
 		return -1 * FLT_MAX;
