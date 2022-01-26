@@ -20,7 +20,7 @@
 
 SceneParser::SceneParser(const char* filename)
 {
-
+    //filename = "scene1_01.txt";
     // initialize some reasonable default values
     group = NULL;
     camera = NULL;
@@ -70,22 +70,18 @@ void SceneParser::parseFile()
         if (!strcmp(token, "OrthographicCamera"))
         {
             parseOrthographicCamera();
-            cout << "Ortho yes";
         }
         else if (!strcmp(token, "Background"))
         {
             parseBackground();
-            cout << "Background yes";
         }
         else if (!strcmp(token, "Materials"))
         {
             parseMaterials();
-            cout << "Material yes";
         }
         else if (!strcmp(token, "Group"))
         {
             group = parseGroup();
-            cout << "Group yes";
         }
         else
         {
@@ -302,7 +298,7 @@ int SceneParser::getToken(char token[MAX_PARSER_TOKEN_LENGTH])
 {
     // for simplicity, tokens must be separated by whitespace
     assert(file != NULL);
-    int success = fscanf_s(file, "%s", token);
+    int success = fscanf_s(file, "%s", token, MAX_PARSER_TOKEN_LENGTH);
     if (success == EOF)
     {
         token[0] = '\0';

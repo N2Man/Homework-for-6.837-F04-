@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     Camera* camera = sp.getCamera();
     Vec3f BackgroundColor = sp.getBackgroundColor();
     int n_materials = sp.getNumMaterials();
-    vector<Material* > materials;
+    vector<Material*> materials;
     for (int i = 0; i < n_materials; i++) {
         materials.push_back(sp.getMaterial(i));
     }
@@ -80,8 +80,8 @@ int main(int argc, char** argv) {
     // ray tracing
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            float dx = x / width;
-            float dy = y / height;
+            float dx = x / (float)width;
+            float dy = y / (float)height;
             Ray r = camera->generateRay(Vec2f(dx, dy));
             Hit h = Hit(FLT_MAX, materials[0]);
             if (group->intersect(r, h, camera->getTMin())) {
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
                 float depth = h.getT();
                 depth = max(depth_min, depth);
                 depth = min(depth_max, depth);
-                float gray = (depth - depth_min) / (depth_max - depth_min);
+                float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
                 depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
             }
         }
