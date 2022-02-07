@@ -2,6 +2,7 @@
 #include "ray.h"
 #include "hit.h"
 #include "material.h"
+#include "matrix.h"
 class Object3D {
 public:
 	Material* material;

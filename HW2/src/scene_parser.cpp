@@ -1,6 +1,8 @@
+#define _USE_MATH_DEFINES
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
-
+#include <cmath>
 #include "scene_parser.h"
 #include "matrix.h"
 #include "camera.h" 
@@ -12,6 +14,8 @@
 #include "plane.h"
 #include "triangle.h"
 #include "transform.h"
+#include "OrthographicCamera.h"
+#include "PerspectiveCamera.h"
 
 #define DegreesToRadians(x) ((M_PI * x) / 180.0f)
 
@@ -36,7 +40,7 @@ SceneParser::SceneParser(const char* filename) {
     assert(filename != NULL);
     const char* ext = &filename[strlen(filename) - 4];
     assert(!strcmp(ext, ".txt"));
-    file = fopen(filename, "r");
+    fopen_s(&file, filename, "r");
     assert(file != NULL);
     parseFile();
     fclose(file);
@@ -170,7 +174,7 @@ void SceneParser::parseLights() {
     // read in the number of objects
     getToken(token); assert(!strcmp(token, "numLights"));
     num_lights = readInt();
-    lights = new (Light*)[num_lights];
+    lights = new Light * [num_lights];
     // read in the objects
     int count = 0;
     while (num_lights > count) {

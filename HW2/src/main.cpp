@@ -61,7 +61,6 @@ int main(int argc, char** argv) {
             normal_file = argv[i];
         }
         else if (!strcmp(argv[i], "-shade_back")) {
-            i++; assert(i < argc);
             shade_back = true;
         }
         else {
@@ -93,6 +92,8 @@ int main(int argc, char** argv) {
     Image img(width, height);
     img.SetAllPixels(BackgroundColor);
     Image depth_img(width, height);
+    Image normal_img(width, height);
+
     
     // ray tracing
     for (int x = 0; x < width; x++) {
@@ -117,7 +118,7 @@ int main(int argc, char** argv) {
                 for (int i = 0; i < n_lights; i++) {
                     Vec3f light_color;
                     lights[i]->getIllumination(p, light_dir, light_color);
-                    color += light_color * max(p_normal.Dot3(light_color), 0.0f);
+                    color += light_color * max(p_normal.Dot3(light_dir), 0.0f);
                 }
 
                 color.Set(color.x() * dif.x(), color.y() * dif.y(), color.z() * dif.z());
@@ -130,11 +131,16 @@ int main(int argc, char** argv) {
                 depth = min(depth_max, depth);
                 float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
                 depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
+
+                //normal
+                normal_img.SetPixel(x, y, Vec3f(fabs(p_normal.r()), fabs(p_normal.g()), fabs(p_normal.b())));
             }
         }
     }
 
     img.SaveTGA(output_file);
-    depth_img.SaveTGA(depth_file);
+    cout << "output yes";
+    if(depth_file) depth_img.SaveTGA(depth_file);
+    if(normal_file) normal_img.SaveTGA(normal_file);
     return 0;
 }
