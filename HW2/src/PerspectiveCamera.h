@@ -9,24 +9,25 @@ private:
 	float angle;
 public:
 	PerspectiveCamera() {}
-	PerspectiveCamera(Vec3f &c, Vec3f &u, Vec3f &d, float a) {
+	PerspectiveCamera(Vec3f &c, Vec3f &d, Vec3f &u, float a) {
 		center = c;
 		dir = d;
-		up = u;
 		dir.Normalize();
-		Vec3f::Cross3(hori, dir, up);
+		Vec3f::Cross3(hori, dir, u);
 		hori.Normalize();
 		Vec3f::Cross3(up, hori, dir);
-		up.Normalize();
 		angle = a;
 	}
 	~PerspectiveCamera() {}
 
 	Ray generateRay(Vec2f point) {
-		float d = 0.5 / tan(angle / 2);
-		Vec3f v = d * dir + (point.x() - 0.5) * hori + (point.y() - 0.5) * up;
-		v.Normalize();
-		return Ray(center, v);
+		const float dist = 1.0;
+		Vec3f dy = 2 * tan(angle / 2.0) * dist * up;
+		Vec3f dx = 2 * tan(angle / 2.0) * dist * ratio * hori;
+		Vec3f pt = center + dist * dir - 0.5 * dx + point.x() * dx - 0.5 * dy + point.y() * dy;
+		Vec3f dir = pt - center;
+		dir.Normalize();
+		return Ray(center, dir);
 	}
 	float getTMin() const {
 		return -1 * FLT_MAX;

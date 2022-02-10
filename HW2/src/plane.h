@@ -4,18 +4,18 @@
 class Plane : public Object3D {
 private:
 	float distance;
-	Vec3f normal;
+	Vec3f n;
 	Material* material;
 public:
 	Plane() {}
-	Plane(Vec3f& normal, float d, Material* m) :Object3D(m), normal(normal), distance(d) {};
+	Plane(Vec3f& normal, float d, Material* m) :material(m), n(normal), distance(d) {};
 	bool intersect(const Ray& r, Hit& h, float tmin) {
 		Vec3f Rd = r.getDirection();
 		Vec3f Ro = r.getOrigin();
-		float t = -1.0f * (distance + Ro.Dot3(normal)) / Rd.Dot3(normal);
-		if (t > max(tmin, 0.0f) && t < h.getT())
+		float t = (distance - Ro.Dot3(n)) / Rd.Dot3(n);
+		if ((t > max(tmin, 0.0f)) && (t < h.getT()))
 		{
-			h.set(t, material, normal, r);
+			h.set(t, material, n, r);
 			return true;
 		}
 		return false;
