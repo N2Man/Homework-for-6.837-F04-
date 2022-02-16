@@ -25,7 +25,7 @@ float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
 bool shade_back = false;
-bool gui = false;
+bool gui = true;
 int theta_steps = 10;
 int phi_steps = 10;
 bool gouraud = false;
@@ -135,22 +135,24 @@ int main(int argc, char** argv){
                 Vec3f color(0, 0, 0);
                 Vec3f p = h.getIntersectionPoint();
                 Vec3f p_normal = h.getNormal();
-                if (shade_back && p_normal.Dot3(r.getDirection()) > 0) {
+                /*if (shade_back && p_normal.Dot3(r.getDirection()) > 0) {
                     p_normal = -1 * p_normal;
                 }
                 Vec3f dif = h.getMaterial()->getDiffuseColor();
-                color += ambient;
+                color += ambient;*/
 
                 //light
                 Vec3f light_dir;
+                float disToLight;
                 for (int i = 0; i < n_lights; i++) {
                     Vec3f light_color;
-                    float disToLight;
+                    
                     lights[i]->getIllumination(p, light_dir, light_color, disToLight);
-                    color += light_color * max(p_normal.Dot3(light_dir), 0.0f);
+                    color += h.getMaterial()->Shade(r, h, light_dir, light_color);
                 }
 
-                color.Set(color.x() * dif.x(), color.y() * dif.y(), color.z() * dif.z());
+                //color.Set(color.x() * dif.x(), color.y() * dif.y(), color.z() * dif.z());
+                color += h.getMaterial()->getDiffuseColor() * ambient;
 
                 img.SetPixel(x, y, color);
 
@@ -172,7 +174,9 @@ int main(int argc, char** argv){
     if(depth_file) depth_img.SaveTGA(depth_file);
     if(normal_file) normal_img.SaveTGA(normal_file);
     if (gui) {
+        glutInit(&argc, argv);
         GLCanvas canvas;
         canvas.initialize(sp, render);
     }
+    return 0;
 }

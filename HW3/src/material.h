@@ -57,7 +57,8 @@ private:
     float exponent;
 
 public:
-    PhongMaterial(const Vec3f& diffuseColor, const Vec3f& specularColor, float exponent) {};
+    PhongMaterial() {}
+    PhongMaterial(const Vec3f& diffuseColor, const Vec3f& specularColor, float exponent): Material(diffuseColor), specularColor(specularColor), exponent(exponent) {};
     void glSetMaterial(void);
 
     Vec3f getSpecularColor() const {
@@ -66,9 +67,9 @@ public:
 
     Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const {
         Vec3f normal = hit.getNormal();
-        //Ray is Camera to Point
+        
         Vec3f dirToCamera = ray.getDirection();
-        //Clamping
+        
         float clamping = max(normal.Dot3(dirToLight), 0.0f);
         if (shade_back && normal.Dot3(dirToCamera) > 0)
         {

@@ -51,7 +51,6 @@ public:
 
 	void paint() {
 		for (int i = 0; i < objectsNumber; i++) {
-			if (objs[i] == nullptr) continue;
 			objs[i]->paint();
 		}
 	}
@@ -86,12 +85,12 @@ public:
 		b1.Normalize();
 		Vec3f::Cross3(b2, n, b1);
 		b2.Normalize();
-		b1 *= 10000;
-		b2 *= 10000;
+		b1 *= 1000;
+		b2 *= 1000;
 		Vec3f a = b1 + b2;
-		Vec3f b = b1 - b2;
-		Vec3f c = b2 - b1;
-		Vec3f d = (-1) * b1 - b2;
+		Vec3f b = (-1) * b1 + b2;
+		Vec3f c = (-1) * b1 - b2;
+		Vec3f d = b2 - b1;
 		material->glSetMaterial();
 		glBegin(GL_QUADS);
 		glNormal3f(n.x(), n.y(), n.z());
@@ -118,13 +117,6 @@ public:
 	Sphere() : center(0, 0, 0), radius(0) {};
 	Sphere(Vec3f c, double r, Material* m) : Object3D(m), center(c), radius(r) {};
 	~Sphere() {};
-
-	Vec3f getSphereCoord(float theta, float phi) {
-		float x = radius * cos(phi) * sin(theta);
-		float y = radius * cos(phi) * cos(theta);
-		float z = radius * sin(phi);
-		return Vec3f(x, y, z);
-	}
 
 	bool intersect(const Ray& r, Hit& h, float tmin) {
 		Vec3f Rd = r.getDirection();
@@ -162,59 +154,68 @@ public:
 	}
 
 	void paint() {
-		float dtheta = PI / theta_steps;
-		float dphi = 2 * PI / phi_steps;
-		float theta = 0;
-		float phi = 0;
 		material->glSetMaterial();
-		glBegin(GL_QUADS);
-		for (int i = 0; i < theta_steps; i++) {
-			Vec3f p0, p1, p2, p3;
-			p0 = getSphereCoord(theta, phi);
-			p1 = getSphereCoord(theta + dtheta, phi);
-			p2 = getSphereCoord(theta + dtheta, phi + dphi);
-			p3 = getSphereCoord(theta, phi + dphi);
+		float theta = 2 * PI / theta_steps;
+		float phi = PI / phi_steps;
 
-			for (int j = 0; j < phi_steps; j++) {
-				if (j != 0) {
-					p0 = p3;
-					p1 = p2;
-				}
-				Vec3f normal;
-				if (gouraud) {
-					normal = p0 - center;
-					normal.Normalize();
-					glNormal3f(normal.x(), normal.y(), normal.z());
-					glVertex3f(p0.x(), p0.y(), p0.z());
-					normal = p1 - center;
-					normal.Normalize();
-					glNormal3f(normal.x(), normal.y(), normal.z());
-					glVertex3f(p1.x(), p1.y(), p1.z());
-					normal = p2 - center;
-					normal.Normalize();
-					glNormal3f(normal.x(), normal.y(), normal.z());
-					glVertex3f(p2.x(), p2.y(), p2.z());
-					normal = p3 - center;
-					normal.Normalize();
-					glNormal3f(normal.x(), normal.y(), normal.z());
-					glVertex3f(p3.x(), p3.y(), p3.z());
-				}
-				else {
-					Vec3f edge1 = p3 - p0;
-					Vec3f edge2 = p1 - p0;
-					Vec3f::Cross3(normal, edge1, edge2);
-					normal.Normalize();
-					glNormal3f(normal.x(), normal.y(), normal.z());
-					glVertex3f(p0.x(), p0.y(), p0.z());
-					glVertex3f(p1.x(), p1.y(), p1.z());
-					glVertex3f(p2.x(), p2.y(), p2.z());
-					glVertex3f(p3.x(), p3.y(), p3.z());
+		Vec3f* points = new Vec3f[theta_steps * (phi_steps + 1)];
 
+		// initialize all the points
+		Vec3f top = center + Vec3f(0, 1, 0) * radius;
+		Vec3f below = center + Vec3f(0, -1, 0) * radius;
+
+		for (int iPhi = 0; iPhi < phi_steps + 1; iPhi++)
+		{
+			for (int iTheta = 0; iTheta < theta_steps; iTheta++)
+			{
+				int index = theta_steps * iPhi + iTheta;
+				if (iPhi == 0)
+				{
+					points[index] = below;
+					continue;
 				}
-				phi += dphi;
+				if (iPhi == phi_steps)
+				{
+					points[index] = top;
+					continue;
+				}
+				float tphi = iPhi * phi - PI / 2;
+				float ttheta = theta * iTheta;
+				points[index] = center + radius * sin(tphi) * Vec3f(0, 1, 0)
+					+ radius * cos(tphi) * cos(ttheta) * Vec3f(1, 0, 0) + radius * cos(tphi) * sin(ttheta) * Vec3f(0, 0, 1);
 			}
-			theta += dtheta;
 		}
+
+		glBegin(GL_QUADS);
+		for (int iPhi = 0; iPhi < phi_steps; iPhi++)
+		{
+			for (int iTheta = 0; iTheta < theta_steps; iTheta++)
+			{
+				
+				int index[4] = { theta_steps * iPhi + iTheta ,theta_steps * iPhi + (iTheta + 1) % theta_steps,
+					theta_steps * (iPhi + 1) + (iTheta + 1) % theta_steps ,theta_steps * (iPhi + 1) + iTheta };
+				Vec3f normal;
+				if (!gouraud)
+				{
+					Vec3f::Cross3(normal, points[index[0]] - points[index[1]], points[index[2]] - points[index[1]]);
+					if (normal.Length() == 0)
+					{
+						Vec3f::Cross3(normal, points[index[1]] - points[index[2]], points[index[3]] - points[index[2]]);
+					}
+				}
+				for (int i = 0; i < 4; i++)
+				{
+					if (gouraud)
+					{
+						normal = points[index[i]] - center;
+					}
+					normal.Normalize();
+					glNormal3f(normal.x(), normal.y(), normal.z());
+					glVertex3f(points[index[i]].x(), points[index[i]].y(), points[index[i]].z());
+				}
+			}
+		}
+
 		glEnd();
 	}
 };
@@ -256,11 +257,11 @@ public:
 	}
 };
 
-float det2(float a, float b, float c, float d) {
+static float det2(float a, float b, float c, float d) {
 	return a * d - b * c;
 }
 
-float det3(float a1, float a2, float a3, float b1, float b2, float b3, float c1, float c2, float c3) {
+static float det3(float a1, float a2, float a3, float b1, float b2, float b3, float c1, float c2, float c3) {
 	return a1 * det2(b2, b3, c2, c3) - b1 * det2(a2, a3, c2, c3) + c1 * det2(a2, a3, b2, b3);
 }
 
@@ -308,6 +309,7 @@ public:
 	void paint() {
 		material->glSetMaterial();
 		glBegin(GL_TRIANGLES);
+		glNormal3f(normal.x(), normal.y(), normal.z());
 		glVertex3f(a.x(), a.y(), a.z());
 		glVertex3f(b.x(), b.y(), b.z());
 		glVertex3f(c.x(), c.y(), c.z());
