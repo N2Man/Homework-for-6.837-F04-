@@ -1,0 +1,182 @@
+#include "camera.h"
+#include "hit.h"
+#include "image.h"
+#include "Object3D.h"
+#include "ray.h"
+#include "scene_parser.h"
+#include "vectors.h"
+#include "light.h"
+#include "windows.h"
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
+#include <vector>
+
+// ========================================================
+// =====================Settings===========================
+// ========================================================
+
+char* input_file = NULL;
+int width = 100;
+int height = 100;
+char* output_file = NULL;
+float depth_min = 0;
+float depth_max = 1;
+char* depth_file = NULL;
+char* normal_file = NULL;
+bool shade_back = false;
+bool gui = true;
+int theta_steps = 10;
+int phi_steps = 10;
+bool gouraud = false;
+
+// ========================================================
+// =====================CMD================================
+// ========================================================
+
+void getArgv(int argc, char** argv) {
+
+    // sample command line:
+    // raytracer -input scene1_01.txt -size 200 200 -output output1_1.tga -depth 9 10 depth1_1.tga
+
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-input")) {
+            i++; assert(i < argc);
+            input_file = argv[i];
+        }
+        else if (!strcmp(argv[i], "-size")) {
+            i++; assert(i < argc);
+            width = atoi(argv[i]);
+            i++; assert(i < argc);
+            height = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-output")) {
+            i++; assert(i < argc);
+            output_file = argv[i];
+        }
+        else if (!strcmp(argv[i], "-depth")) {
+            i++; assert(i < argc);
+            depth_min = atof(argv[i]);
+            i++; assert(i < argc);
+            depth_max = atof(argv[i]);
+            i++; assert(i < argc);
+            depth_file = argv[i];
+        }
+        else if (!strcmp(argv[i], "-normals")) {
+            i++; assert(i < argc);
+            normal_file = argv[i];
+        }
+        else if (!strcmp(argv[i], "-shade_back")) {
+            shade_back = true;
+        }
+        else if (!strcmp(argv[i], "-gui")) {
+            gui = true;
+        }
+        else if (!strcmp(argv[i], "-tessellation")) {
+            i++; assert(i < argc);
+            theta_steps = atoi(argv[i]);
+            i++; assert(i < argc);
+            phi_steps = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-gouraud")) {
+            gouraud = true;
+        }
+        else {
+            printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
+            assert(0);
+        }
+    }
+
+}
+
+// ========================================================
+// =====================Main===============================
+// ========================================================
+
+void render() {}
+
+int main(int argc, char** argv){
+
+    getArgv(argc, argv);
+
+    // read file by scene_parser
+    SceneParser* sp =  new SceneParser(input_file);
+    Camera* camera = sp->getCamera();
+    Vec3f BackgroundColor = sp->getBackgroundColor();
+    int n_materials = sp->getNumMaterials();
+    vector<Material*> materials;
+    for (int i = 0; i < n_materials; i++) {
+        materials.push_back(sp->getMaterial(i));
+    }
+    int n_lights = sp->getNumLights();
+    vector<Light*> lights;
+    for (int i = 0; i < n_lights; i++) {
+        lights.push_back(sp->getLight(i));
+    }
+    Group* group = sp->getGroup();
+    Vec3f ambient = sp->getAmbientLight();
+
+    //create the image
+    Image img(width, height);
+    img.SetAllPixels(BackgroundColor);
+    Image depth_img(width, height);
+    Image normal_img(width, height);
+
+    
+    // render
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            float dx = x / (float)width;
+            float dy = y / (float)height;
+            Ray r = camera->generateRay(Vec2f(dx, dy));
+            Hit h = Hit(FLT_MAX, materials[0], Vec3f(0, 0, 0));
+            if (group->intersect(r, h, camera->getTMin())) {
+                // diffuse
+                Vec3f color(0, 0, 0);
+                Vec3f p = h.getIntersectionPoint();
+                Vec3f p_normal = h.getNormal();
+                /*if (shade_back && p_normal.Dot3(r.getDirection()) > 0) {
+                    p_normal = -1 * p_normal;
+                }
+                Vec3f dif = h.getMaterial()->getDiffuseColor();
+                color += ambient;*/
+
+                //light
+                Vec3f light_dir;
+                float disToLight;
+                for (int i = 0; i < n_lights; i++) {
+                    Vec3f light_color;
+                    
+                    lights[i]->getIllumination(p, light_dir, light_color, disToLight);
+                    color += h.getMaterial()->Shade(r, h, light_dir, light_color);
+                }
+
+                //color.Set(color.x() * dif.x(), color.y() * dif.y(), color.z() * dif.z());
+                color += h.getMaterial()->getDiffuseColor() * ambient;
+
+                img.SetPixel(x, y, color);
+
+                //depth_map
+                float depth = h.getT();
+                depth = max(depth_min, depth);
+                depth = min(depth_max, depth);
+                float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
+                depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
+
+                //normal
+                normal_img.SetPixel(x, y, Vec3f(fabs(p_normal.r()), fabs(p_normal.g()), fabs(p_normal.b())));
+            }
+        }
+    }
+
+    img.SaveTGA(output_file);
+    cout << "output yes";
+    if(depth_file) depth_img.SaveTGA(depth_file);
+    if(normal_file) normal_img.SaveTGA(normal_file);
+    if (gui) {
+        glutInit(&argc, argv);
+        GLCanvas canvas;
+        canvas.initialize(sp, render);
+    }
+    return 0;
+}
