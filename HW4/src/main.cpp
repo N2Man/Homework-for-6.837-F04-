@@ -11,6 +11,8 @@
 #include <GL/glu.h>
 #include <GL/glut.h>
 #include <vector>
+#include "raytracer.h"
+#include "rayTree.h"
 
 // ========================================================
 // =====================Settings===========================
@@ -29,6 +31,10 @@ bool gui = true;
 int theta_steps = 10;
 int phi_steps = 10;
 bool gouraud = false;
+bool shadow = false;
+int bounces = 10;
+float weight = 10;
+SceneParser* sp;
 
 // ========================================================
 // =====================CMD================================
@@ -81,6 +87,17 @@ void getArgv(int argc, char** argv) {
         else if (!strcmp(argv[i], "-gouraud")) {
             gouraud = true;
         }
+        else if (!strcmp(argv[i], "-shadows")) {
+            shadow = true;
+        }
+        else if (!strcmp(argv[i], "-bounces")) {
+            i++; assert(i < argc);
+            bounces = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-weight")) {
+            i++; assert(i < argc);
+            weight = atof(argv[i]);
+        }
         else {
             printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
             assert(0);
@@ -93,14 +110,9 @@ void getArgv(int argc, char** argv) {
 // =====================Main===============================
 // ========================================================
 
-void render() {}
-
-int main(int argc, char** argv){
-
-    getArgv(argc, argv);
-
-    // read file by scene_parser
-    SceneParser* sp =  new SceneParser(input_file);
+void render() {
+    
+    RayTracer* rt = new RayTracer(sp, bounces, weight, shadow);
     Camera* camera = sp->getCamera();
     Vec3f BackgroundColor = sp->getBackgroundColor();
     int n_materials = sp->getNumMaterials();
@@ -122,7 +134,7 @@ int main(int argc, char** argv){
     Image depth_img(width, height);
     Image normal_img(width, height);
 
-    
+
     // render
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
@@ -130,53 +142,49 @@ int main(int argc, char** argv){
             float dy = y / (float)height;
             Ray r = camera->generateRay(Vec2f(dx, dy));
             Hit h = Hit(FLT_MAX, materials[0], Vec3f(0, 0, 0));
-            if (group->intersect(r, h, camera->getTMin())) {
-                // diffuse
-                Vec3f color(0, 0, 0);
-                Vec3f p = h.getIntersectionPoint();
-                Vec3f p_normal = h.getNormal();
-                /*if (shade_back && p_normal.Dot3(r.getDirection()) > 0) {
-                    p_normal = -1 * p_normal;
-                }
-                Vec3f dif = h.getMaterial()->getDiffuseColor();
-                color += ambient;*/
+            Vec3f color(0, 0, 0);
+            Vec3f p = h.getIntersectionPoint();
+            Vec3f p_normal = h.getNormal();
+            color = rt->traceRay(r, epsilon, 0, 1, 1, h);
+            //depth_map
+            float depth = h.getT();
+            depth = max(depth_min, depth);
+            depth = min(depth_max, depth);
+            float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
+            depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
 
-                //light
-                Vec3f light_dir;
-                float disToLight;
-                for (int i = 0; i < n_lights; i++) {
-                    Vec3f light_color;
-                    
-                    lights[i]->getIllumination(p, light_dir, light_color, disToLight);
-                    color += h.getMaterial()->Shade(r, h, light_dir, light_color);
-                }
-
-                //color.Set(color.x() * dif.x(), color.y() * dif.y(), color.z() * dif.z());
-                color += h.getMaterial()->getDiffuseColor() * ambient;
-
-                img.SetPixel(x, y, color);
-
-                //depth_map
-                float depth = h.getT();
-                depth = max(depth_min, depth);
-                depth = min(depth_max, depth);
-                float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
-                depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
-
-                //normal
-                normal_img.SetPixel(x, y, Vec3f(fabs(p_normal.r()), fabs(p_normal.g()), fabs(p_normal.b())));
-            }
+            //normal
+            normal_img.SetPixel(x, y, Vec3f(fabs(p_normal.r()), fabs(p_normal.g()), fabs(p_normal.b())));
         }
     }
 
     img.SaveTGA(output_file);
     cout << "output yes";
-    if(depth_file) depth_img.SaveTGA(depth_file);
-    if(normal_file) normal_img.SaveTGA(normal_file);
+    if (depth_file) depth_img.SaveTGA(depth_file);
+    if (normal_file) normal_img.SaveTGA(normal_file);
+}
+
+void traceRayFunction(float x, float y)
+{
+    Ray r = sp->getCamera()->generateRay(Vec2f(x, y));
+    Hit h(FLT_MAX, nullptr, Vec3f(0.0f, 0.0f, 1.0f));
+    RayTracer rt(sp, bounces, weight, shadow);
+    Vec3f pixel = rt.traceRay(r, epsilon, 0, 1.0, 1.0, h);
+}
+
+int main(int argc, char** argv){
+
+    getArgv(argc, argv);
+
+    // read file by scene_parser
+    sp = new SceneParser(input_file);
     if (gui) {
         glutInit(&argc, argv);
         GLCanvas canvas;
-        canvas.initialize(sp, render);
+        canvas.initialize(sp, render, traceRayFunction);
+    }
+    else {
+        render();
     }
     return 0;
 }

@@ -30,6 +30,12 @@ public:
 	virtual Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const = 0;
 
 	virtual void glSetMaterial(void) const = 0;
+
+    virtual Vec3f getSpecularColor(void) const = 0;
+    virtual Vec3f getReflectiveColor(void) const = 0;
+    virtual Vec3f getTransparentColor(void) const = 0;
+    virtual float getIndexOfRefraction(void) const = 0;
+
 protected:
 
 	// REPRESENTATION
@@ -57,14 +63,14 @@ private:
     float exponent;
     Vec3f reflectiveColor;
     Vec3f transparentColor;
-    float indexOfReflection;
+    float indexOfRefraction;
 
 public:
     PhongMaterial() {}
     PhongMaterial(const Vec3f& diffuseColor, const Vec3f& specularColor, float exponent,
-                    const Vec3f& reflectiveColor, const Vec3f& transparentColor, float indexOfReflection): 
+                    const Vec3f& reflectiveColor, const Vec3f& transparentColor, float indexOfRefraction):
                     Material(diffuseColor), specularColor(specularColor), exponent(exponent),
-                    reflectiveColor(reflectiveColor), transparentColor(transparentColor), indexOfReflection(indexOfReflection) {};
+                    reflectiveColor(reflectiveColor), transparentColor(transparentColor), indexOfRefraction(indexOfRefraction) {};
 
     Vec3f getSpecularColor() const {
         return specularColor;
@@ -78,6 +84,9 @@ public:
         return transparentColor;
     }
     
+    float getIndexOfRefraction() const {
+        return indexOfRefraction;
+    }
 
     Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const {
         Vec3f normal = hit.getNormal();

@@ -54,6 +54,20 @@ public:
 			objs[i]->paint();
 		}
 	}
+
+	bool intersectShadowRay(const Ray& r, Hit& h, float tmin)
+	{
+		bool res = false;
+		for (int i = 0; i < objectsNumber; i++)
+		{
+			if (objs[i] == nullptr)
+				continue;
+			res = objs[i]->intersect(r, h, tmin) || res;
+			if (res)
+				return true;
+		}
+		return false;
+	}
 };
 
 class Plane : public Object3D {
