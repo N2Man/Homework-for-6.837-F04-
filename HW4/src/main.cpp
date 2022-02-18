@@ -27,7 +27,7 @@ float depth_max = 1;
 char* depth_file = NULL;
 char* normal_file = NULL;
 bool shade_back = false;
-bool gui = true;
+bool gui = false;
 int theta_steps = 10;
 int phi_steps = 10;
 bool gouraud = false;
@@ -141,11 +141,13 @@ void render() {
             float dx = x / (float)width;
             float dy = y / (float)height;
             Ray r = camera->generateRay(Vec2f(dx, dy));
-            Hit h = Hit(FLT_MAX, materials[0], Vec3f(0, 0, 0));
+            Hit h;
             Vec3f color(0, 0, 0);
             Vec3f p = h.getIntersectionPoint();
             Vec3f p_normal = h.getNormal();
-            color = rt->traceRay(r, epsilon, 0, 1, 1, h);
+            color = rt->traceRay(r, epsilon, 0, 1, h);
+            
+            img.SetPixel(height - y - 1, x, color);
             //depth_map
             float depth = h.getT();
             depth = max(depth_min, depth);
@@ -166,10 +168,13 @@ void render() {
 
 void traceRayFunction(float x, float y)
 {
-    Ray r = sp->getCamera()->generateRay(Vec2f(x, y));
-    Hit h(FLT_MAX, nullptr, Vec3f(0.0f, 0.0f, 1.0f));
-    RayTracer rt(sp, bounces, weight, shadow);
-    Vec3f pixel = rt.traceRay(r, epsilon, 0, 1.0, 1.0, h);
+    Camera* cameraAll = sp->getCamera();
+    RayTracer raytracer;
+
+    Vec2f point(y, 1 - x);
+    Ray rayTemp = cameraAll->generateRay(point);
+    Hit hit_result;
+    Vec3f Color = raytracer.traceRay(rayTemp, cameraAll->getTMin(), 0, weight, hit_result);
 }
 
 int main(int argc, char** argv){
@@ -179,7 +184,7 @@ int main(int argc, char** argv){
     // read file by scene_parser
     sp = new SceneParser(input_file);
     if (gui) {
-        glutInit(&argc, argv);
+        glutInit(&argc,argv);
         GLCanvas canvas;
         canvas.initialize(sp, render, traceRayFunction);
     }

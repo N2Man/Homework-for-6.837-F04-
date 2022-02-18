@@ -15,6 +15,7 @@ class Hit {
 public:
 
     // CONSTRUCTOR & DESTRUCTOR
+    Hit(float t) : t(t), material(nullptr) {}
     Hit() { material = NULL; }
     Hit(float _t, Material* m, Vec3f n) {
         t = _t; material = m; normal = n;
@@ -31,6 +32,7 @@ public:
     float getT() const { return t; }
     Material* getMaterial() const { return material; }
     Vec3f getNormal() const { return normal; }
+    void initialize() { t = FLT_MAX; }
     Vec3f getIntersectionPoint() const { return intersectionPoint; }
 
     // MODIFIER

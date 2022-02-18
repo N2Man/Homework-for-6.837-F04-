@@ -35,6 +35,8 @@ public:
     virtual Vec3f getReflectiveColor(void) const = 0;
     virtual Vec3f getTransparentColor(void) const = 0;
     virtual float getIndexOfRefraction(void) const = 0;
+    virtual bool reflect(const Ray& ray, const Hit& hit, Vec3f& attenuation, Ray& reflected) const = 0;
+    virtual bool refract(const Ray& ray, const Hit& hit, Vec3f& attenuation, Ray& reflected) const = 0;
 
 protected:
 
@@ -87,6 +89,50 @@ public:
     float getIndexOfRefraction() const {
         return indexOfRefraction;
     }
+
+    bool reflect(const Ray& ray, const Hit& hit, Vec3f& attenuation, Ray& reflected) const {
+        if (reflectiveColor.Length() < 0.0001)
+            return false;
+        Vec3f ray_in = ray.getDirection();
+        Vec3f normal = hit.getNormal();
+        //if(ray_in.Dot3(normal) > 0)
+        //    normal = -1 * normal;
+        Vec3f ray_out = ray_in - 2.0f * normal.Dot3(ray_in) * normal;
+        ray_out.Normalize();
+        reflected = Ray(hit.getIntersectionPoint(), ray_out);
+        attenuation = reflectiveColor;
+        return true;
+    }
+
+
+    bool refract(const Ray& ray, const Hit& hit, Vec3f& attenuation, Ray& refracted) const {
+        if (transparentColor.Length() < 0.0001)
+            return false;
+        Vec3f ray_in = ray.getDirection();
+        Vec3f normal = hit.getNormal();
+        float ni_over_nt;
+        if (ray_in.Dot3(normal) > 0) {
+            normal = -1 * normal;
+            ni_over_nt = indexOfRefraction;
+        }
+        else {
+            ni_over_nt = 1.0f / indexOfRefraction;
+        }
+        Vec3f v = ray_in * -1;
+        float NoV = normal.Dot3(v);
+        float t = 1 - ni_over_nt * ni_over_nt * (1 - NoV * NoV);
+        if (t > 0) {
+            Vec3f ray_out = (ni_over_nt * NoV - sqrt(t)) * normal - ni_over_nt * v;
+            ray_out.Normalize();
+            refracted = Ray(hit.getIntersectionPoint(), ray_out);
+            attenuation = transparentColor;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
 
     Vec3f Shade(const Ray& ray, const Hit& hit, const Vec3f& dirToLight, const Vec3f& lightColor) const {
         Vec3f normal = hit.getNormal();

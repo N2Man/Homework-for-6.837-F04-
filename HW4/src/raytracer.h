@@ -50,6 +50,7 @@ public:
 	int max_bounces;
 	float w;
 	bool shadow;
+	bool useTransparentShadows = false;
 	
 
 	RayTracer() {}
@@ -58,86 +59,56 @@ public:
 	
 	
 
-	Vec3f traceRay(Ray& ray, float tmin, int bounces, float weight, float indexOfRefraction, Hit& hit) const {
-		vector<Material*> materials;
-		vector<Light*> lights;
-		for (int i = 0; i < sp->getNumMaterials(); i++)
-		{
-			materials.push_back(sp->getMaterial(i));
-		}
+    Vec3f traceRay(Ray& ray, float tmin, int bounces, float weight, Hit& hit) {
 
-		for (int i = 0; i < sp->getNumLights(); i++)
-		{
-			lights.push_back(sp->getLight(i));
-		}
-		if (bounces > max_bounces)
-			return Vec3f(0, 0, 0);
-		if (weight < weight)
-			return Vec3f(0, 0, 0);
-		if (sp->getGroup()->intersect(ray, hit, epsilon))
-		{
-			
-			Vec3f pt = hit.getIntersectionPoint();
-			Vec3f pt_normal = hit.getNormal();
-			pt_normal.Normalize();
-			Vec3f color = hit.getMaterial()->getDiffuseColor() * sp->getAmbientLight();
-			Vec3f dir2light;
-			float dist2light;
-			//Shadow
-			for (int l = 0; l < sp->getNumLights(); l++)
-			{
-				Vec3f light_color;
-				lights[l]->getIllumination(pt, dir2light, light_color, dist2light);
-				if (shadow)
-				{
-					Ray shadow_ray(pt, dir2light);
-					Hit shadow_hit(dist2light, materials[0], Vec3f(0, 0, 0));
-					Vec3f tmp;
-					if (!sp->getGroup()->intersectShadowRay(shadow_ray, shadow_hit, epsilon))
-					{
-						tmp = hit.getMaterial()->Shade(ray, hit, dir2light, light_color);
-					}
-					
-					color += tmp;
-					RayTree::AddShadowSegment(shadow_ray, 0.0f, shadow_hit.getT());
-				}
-				else
-				{
-					color += hit.getMaterial()->Shade(ray, hit, dir2light, light_color);
-				}
-			}
-			//mirror
-			if (bounces < max_bounces && hit.getMaterial()->getReflectiveColor().Length() > 0) {
-				Ray reflectRay(hit.getIntersectionPoint(), mirrorDirection(hit.getNormal(), ray.getDirection()));
-				Hit reflectHit;
-				color += traceRay(reflectRay, epsilon, bounces + 1, weight, indexOfRefraction, reflectHit) * hit.getMaterial()->getReflectiveColor();
-			}
-			//transparent
-			if (bounces < max_bounces && hit.getMaterial()->getTransparentColor().Length() > 0) {
-				Hit transHit;
-				Vec3f transDir;
-				bool check;
-				if (hit.getNormal().Dot3(ray.getDirection())) {
-					check = transmittedDirection(hit.getNormal(), ray.getDirection(), indexOfRefraction, 1.0, transDir);
-				}
-				else {
-					check = transmittedDirection(hit.getNormal(), ray.getDirection(), 1.0, hit.getMaterial()->getIndexOfRefraction(), transDir);
-				}
+        Group* group = sp->getGroup();
+        //shader
+        if (group->intersect(ray, hit, tmin)) {
+            if (bounces == 0) {
+                RayTree::SetMainSegment(ray, tmin, hit.getT());    //main---------------------------------
+            }
+            Vec3f color(0.0, 0.0, 0.0);
+            Vec3f pos = hit.getIntersectionPoint();
+            Material* material = hit.getMaterial();
+            color += sp->getAmbientLight() * material->getDiffuseColor();
 
-				Ray transRay(hit.getIntersectionPoint(), transDir);
-				if (check) {
-					if (hit.getNormal().Dot3(ray.getDirection())) {
-						color += traceRay(transRay, epsilon, bounces + 1, weight, 1.0, transHit) * hit.getMaterial()->getTransparentColor();
-					}
-					else {
-						color += traceRay(transRay, epsilon, bounces + 1, weight, hit.getMaterial()->getIndexOfRefraction(), transHit) * hit.getMaterial()->getTransparentColor();
-					}
-				}
-			}
-			return color;
-		}
-		return sp->getBackgroundColor();
-	}
+            for (int k = 0; k < sp->getNumLights(); ++k) {
+                Light* light = sp->getLight(k);
+                Vec3f l, lightColor;
+                float dis;
+                light->getIllumination(pos, l, lightColor, dis);
+                //shadows
+                Ray ray_shadows(pos, l);
+                Hit hit_shadows(dis);
+                if (shadow) {
+                    if (!group->intersectShadowRay(ray_shadows, hit_shadows, tmin))
+                        color += material->Shade(ray, hit, l, lightColor);
+                }
+                else
+                    color += material->Shade(ray, hit, l, lightColor);
+                RayTree::AddShadowSegment(ray_shadows, tmin, hit_shadows.getT());  //shadows---------------------------------
+
+            }
+            //reflective
+            Ray scattered;
+            Vec3f attenuation;
+            if (bounces < max_bounces && weight > w && material->reflect(ray, hit, attenuation, scattered)) {
+                Hit hit_ref(INFINITY);
+                color += attenuation * traceRay(scattered, tmin, bounces + 1, weight * attenuation.Length(), hit_ref);
+                RayTree::AddReflectedSegment(scattered, tmin, hit_ref.getT());//reflect---------------------------------
+            }
+            //refraction transparent
+            if (bounces < max_bounces && weight > w && material->refract(ray, hit, attenuation, scattered)) {
+                Hit hit_ref(INFINITY);
+                color += attenuation * traceRay(scattered, tmin, bounces + 1, weight * attenuation.Length(), hit_ref);
+                RayTree::AddTransmittedSegment(scattered, tmin, hit_ref.getT());//trans---------------------------------
+            }
+            return color;
+        }
+        else {
+            return sp->getBackgroundColor();
+        }
+    }
 
     /*Vec3f traceRay(Ray& ray, float tmin, int bounces, float weight,
         float indexOfRefraction, Hit& hit) const
