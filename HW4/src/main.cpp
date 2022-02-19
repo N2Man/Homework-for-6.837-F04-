@@ -31,10 +31,10 @@ bool gui = false;
 int theta_steps = 10;
 int phi_steps = 10;
 bool gouraud = false;
-bool shadow = false;
+bool shadows = false;
 int bounces = 10;
 float weight = 10;
-SceneParser* sp;
+SceneParser* scene;
 
 // ========================================================
 // =====================CMD================================
@@ -88,7 +88,7 @@ void getArgv(int argc, char** argv) {
             gouraud = true;
         }
         else if (!strcmp(argv[i], "-shadows")) {
-            shadow = true;
+            shadows = true;
         }
         else if (!strcmp(argv[i], "-bounces")) {
             i++; assert(i < argc);
@@ -110,86 +110,51 @@ void getArgv(int argc, char** argv) {
 // =====================Main===============================
 // ========================================================
 
-void render() {
-    
-    RayTracer* rt = new RayTracer(sp, bounces, weight, shadow);
-    Camera* camera = sp->getCamera();
-    Vec3f BackgroundColor = sp->getBackgroundColor();
-    int n_materials = sp->getNumMaterials();
-    vector<Material*> materials;
-    for (int i = 0; i < n_materials; i++) {
-        materials.push_back(sp->getMaterial(i));
+void renderFunction() {}
+
+void traceRayFunction(float x, float y) {
+    //cout << x << "" << y << endl;
+    Ray ray = scene->getCamera()->generateRay(Vec2f(x, y));
+    RayTracer rayTracer(scene, bounces, weight);
+    float tmin = 0.001f;
+    Hit hit(INFINITY);
+    Vec3f color = rayTracer.traceRay(ray, tmin, 0, 1.0, hit);
+}
+
+int main(int argc, char** argv) {
+
+    // sample command line:
+    // -input scene4_03_mirrored_floor.txt -size 200 200 -output output4_03.tga -shadows -bounces 1 -weight 0.01
+    getArgv(argc, argv);
+
+    scene = new SceneParser(input_file);
+    Camera* camera = scene->getCamera();
+
+    Image image(width, height);
+    image.SetAllPixels(scene->getBackgroundColor());
+
+    if (gui) {
+        glutInit(&argc, argv);
+        GLCanvas glCanvas;
+        glCanvas.initialize(scene, renderFunction, traceRayFunction);
+        return 0;
     }
-    int n_lights = sp->getNumLights();
-    vector<Light*> lights;
-    for (int i = 0; i < n_lights; i++) {
-        lights.push_back(sp->getLight(i));
-    }
-    Group* group = sp->getGroup();
-    Vec3f ambient = sp->getAmbientLight();
 
-    //create the image
-    Image img(width, height);
-    img.SetAllPixels(BackgroundColor);
-    Image depth_img(width, height);
-    Image normal_img(width, height);
-
-
-    // render
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-            float dx = x / (float)width;
-            float dy = y / (float)height;
-            Ray r = camera->generateRay(Vec2f(dx, dy));
-            Hit h;
-            Vec3f color(0, 0, 0);
-            Vec3f p = h.getIntersectionPoint();
-            Vec3f p_normal = h.getNormal();
-            color = rt->traceRay(r, epsilon, 0, 1, h);
-            
-            img.SetPixel(height - y - 1, x, color);
-            //depth_map
-            float depth = h.getT();
-            depth = max(depth_min, depth);
-            depth = min(depth_max, depth);
-            float gray = 1 - (depth - depth_min) / (depth_max - depth_min);
-            depth_img.SetPixel(x, y, Vec3f(gray, gray, gray));
-
-            //normal
-            normal_img.SetPixel(x, y, Vec3f(fabs(p_normal.r()), fabs(p_normal.g()), fabs(p_normal.b())));
+    RayTracer rayTracer(scene, bounces, weight);
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            float x = float(i) / float(width);
+            float y = float(j) / float(height);
+            Ray ray = camera->generateRay(Vec2f(x, y));
+            float tmin = 0.001f;
+            Hit hit(INFINITY);
+            Vec3f color = rayTracer.traceRay(ray, tmin, 0, 1.0, hit);
+            image.SetPixel(i, j, color);
         }
     }
 
-    img.SaveTGA(output_file);
-    cout << "output yes";
-    if (depth_file) depth_img.SaveTGA(depth_file);
-    if (normal_file) normal_img.SaveTGA(normal_file);
-}
+    if (output_file != nullptr)
+        image.SaveTGA(output_file);
 
-void traceRayFunction(float x, float y)
-{
-    Camera* cameraAll = sp->getCamera();
-    RayTracer raytracer;
-
-    Vec2f point(y, 1 - x);
-    Ray rayTemp = cameraAll->generateRay(point);
-    Hit hit_result;
-    Vec3f Color = raytracer.traceRay(rayTemp, cameraAll->getTMin(), 0, weight, hit_result);
-}
-
-int main(int argc, char** argv){
-
-    getArgv(argc, argv);
-
-    // read file by scene_parser
-    sp = new SceneParser(input_file);
-    if (gui) {
-        glutInit(&argc,argv);
-        GLCanvas canvas;
-        canvas.initialize(sp, render, traceRayFunction);
-    }
-    else {
-        render();
-    }
     return 0;
 }
