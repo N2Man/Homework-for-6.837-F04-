@@ -18,7 +18,7 @@ Parser::Parser(const char *filename) {
   getToken(token);
   assert (!strcmp(token,"num_systems"));
   num_systems = readInt();
-  systems = new (System*)[num_systems];
+  systems = new System*[num_systems];
 
   // read the systems
   for (int i = 0; i < num_systems; i++) {
@@ -155,7 +155,7 @@ Integrator* Parser::ParseIntegrator() {
   if (!strcmp(type,"euler_integrator")) {
     answer = new EulerIntegrator();
   } else if (!strcmp(type,"midpoint_integrator")) {
-    answer = new MidpointIntegrator();
+    answer = new MidPointIntegrator();
   } else if (!strcmp(type,"rungekutta_integrator")) {
     answer = new RungeKuttaIntegrator();
   } else {

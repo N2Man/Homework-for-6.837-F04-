@@ -39,3 +39,14 @@ public:
 		return Vec3f(0, 1, 0);
 	}
 };
+
+class RungeKuttaIntegrator :public Integrator {
+public:
+	RungeKuttaIntegrator() {};
+	~RungeKuttaIntegrator() {};
+	void Update(Particle* particle, ForceField* forcefield, float t, float dt) override;
+
+	Vec3f getColor() override {
+		return Vec3f(0, 0, 1);
+	}
+};
