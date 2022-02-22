@@ -8,24 +8,27 @@
 
 class Spline {
 public:
+
+	virtual void set(int i, Vec3f v) {}
+
 	// FOR VISUALIZATION
-	virtual void Paint(ArgParser* args);
+	virtual void Paint(ArgParser* args) = 0;
 
 	// FOR CONVERTING BETWEEN SPLINE TYPES
-	virtual void OutputBezier(FILE* file);
-	virtual void OutputBSpline(FILE* file);
+	virtual void OutputBezier(FILE* file) {}
+	virtual void OutputBSpline(FILE* file) {}
 
 	// FOR CONTROL POINT PICKING
-	virtual int getNumVertices();
-	virtual Vec3f getVertex(int i);
+	virtual int getNumVertices() = 0;
+	virtual Vec3f getVertex(int i) = 0;
 
 	// FOR EDITING OPERATIONS
-	virtual void moveControlPoint(int selectedPoint, float x, float y);
-	virtual void addControlPoint(int selectedPoint, float x, float y);
-	virtual void deleteControlPoint(int selectedPoint);
+	virtual void moveControlPoint(int selectedPoint, float x, float y) {}
+	virtual void addControlPoint(int selectedPoint, float x, float y) {}
+	virtual void deleteControlPoint(int selectedPoint) {}
 
 	// FOR GENERATING TRIANGLES
-	virtual TriangleMesh* OutputTriangles(ArgParser* args);
+	virtual TriangleMesh* OutputTriangles(ArgParser* args) { return nullptr; }
 
 protected:
 	Matrix Bezier_M = new float[16]{ -1,3,-3,1,
