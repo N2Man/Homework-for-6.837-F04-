@@ -7,7 +7,7 @@
 #include "camera.h" 
 #include "light.h"
 #include "material.h"
-#include "object3d.h"
+#include "Object3D.h"
 
 #define DegreesToRadians(x) ((M_PI * x) / 180.0f)
 

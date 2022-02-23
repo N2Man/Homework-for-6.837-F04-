@@ -1,11 +1,12 @@
+#include "Object3D.h"
 #include "glCanvas.h"
 #include "scene_parser.h"
 #include "light.h"
 #include "camera.h"
-#include "group.h"
+#include "grid.h"
 #include "rayTree.h"
 #include "material.h"
-#include "grid.h"
+
 #include "boundingbox.h"
 
 // Included files for OpenGL Rendering

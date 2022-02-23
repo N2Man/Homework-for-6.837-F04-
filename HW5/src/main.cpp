@@ -6,6 +6,7 @@
 #include "scene_parser.h"
 #include "vectors.h"
 #include "light.h"
+#include "grid.h"
 #include "windows.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -34,6 +35,8 @@ bool gouraud = false;
 bool shadows = false;
 int bounces = 10;
 float weight = 10;
+int nx, ny, nz = 0;
+bool visualize_grid = false;
 SceneParser* scene;
 
 // ========================================================
@@ -98,6 +101,17 @@ void getArgv(int argc, char** argv) {
             i++; assert(i < argc);
             weight = atof(argv[i]);
         }
+        else if (!strcmp(argv[i], "-grid")) {
+            i++; assert(i < argc);
+            nx = atoi(argv[i]);
+            i++; assert(i < argc);
+            ny = atoi(argv[i]);
+            i++; assert(i < argc);
+            nz = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-visualize_grid")) {
+            visualize_grid = true;
+        }
         else {
             printf("whoops error with command line argument %d: '%s'\n", i, argv[i]);
             assert(0);
@@ -119,6 +133,8 @@ void traceRayFunction(float x, float y) {
     float tmin = 0.001f;
     Hit hit(INFINITY);
     Vec3f color = rayTracer.traceRay(ray, tmin, 0, 1.0, hit);
+    Hit hit2(INFINITY);
+    rayTracer.grid->intersect(ray, hit2, tmin);
 }
 
 int main(int argc, char** argv) {
@@ -133,10 +149,16 @@ int main(int argc, char** argv) {
     Image image(width, height);
     image.SetAllPixels(scene->getBackgroundColor());
 
+    Grid* grid = nullptr;
+    if (nx != 0) {
+        grid = new Grid(scene->getGroup()->getBoundingBox(), nx, ny, nz);
+        scene->getGroup()->insertIntoGrid(grid, nullptr);
+    }
+
     if (gui) {
         glutInit(&argc, argv);
         GLCanvas glCanvas;
-        glCanvas.initialize(scene, renderFunction, traceRayFunction);
+        glCanvas.initialize(scene, renderFunction, traceRayFunction, grid, visualize_grid);
         return 0;
     }
 

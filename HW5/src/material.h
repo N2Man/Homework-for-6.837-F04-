@@ -69,6 +69,9 @@ private:
 
 public:
     PhongMaterial() {}
+
+    PhongMaterial(const Vec3f& d_color) : Material(d_color), exponent(0), indexOfRefraction(0) {}
+
     PhongMaterial(const Vec3f& diffuseColor, const Vec3f& specularColor, float exponent,
                     const Vec3f& reflectiveColor, const Vec3f& transparentColor, float indexOfRefraction):
                     Material(diffuseColor), specularColor(specularColor), exponent(exponent),

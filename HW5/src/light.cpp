@@ -1,6 +1,6 @@
 #include "windows.h"
 #include <GL/gl.h>
-
+#include "Object3D.h"
 #include "light.h"
 
 // ====================================================================
