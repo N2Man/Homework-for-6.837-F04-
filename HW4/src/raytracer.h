@@ -26,7 +26,7 @@ Vec3f RayTracer::traceRay(Ray& ray, float tmin, int bounces, float weight, Hit& 
     //shader
     if (group->intersect(ray, hit, tmin)) {
         if (bounces == 0) {
-            RayTree::SetMainSegment(ray, tmin, hit.getT());    //main---------------------------------
+            RayTree::SetMainSegment(ray, tmin, hit.getT());   
         }
         Vec3f color(0.0, 0.0, 0.0);
         Vec3f pos = hit.getIntersectionPoint();
@@ -47,7 +47,7 @@ Vec3f RayTracer::traceRay(Ray& ray, float tmin, int bounces, float weight, Hit& 
             }
             else
                 color += material->Shade(ray, hit, l, lightColor);
-            RayTree::AddShadowSegment(ray_shadows, tmin, hit_shadows.getT());  //shadows---------------------------------
+            RayTree::AddShadowSegment(ray_shadows, tmin, hit_shadows.getT()); 
 
         }
         //reflective
@@ -56,13 +56,13 @@ Vec3f RayTracer::traceRay(Ray& ray, float tmin, int bounces, float weight, Hit& 
         if (bounces < max_bounces && weight > min_weight && material->reflect(ray, hit, attenuation, scattered)) {
             Hit hit_ref(INFINITY);
             color += attenuation * traceRay(scattered, tmin, bounces + 1, weight * attenuation.Length(), hit_ref);
-            RayTree::AddReflectedSegment(scattered, tmin, hit_ref.getT());//reflect---------------------------------
+            RayTree::AddReflectedSegment(scattered, tmin, hit_ref.getT());
         }
         //refraction transparent
         if (bounces < max_bounces && weight > min_weight && material->refract(ray, hit, attenuation, scattered)) {
             Hit hit_ref(INFINITY);
             color += attenuation * traceRay(scattered, tmin, bounces + 1, weight * attenuation.Length(), hit_ref);
-            RayTree::AddTransmittedSegment(scattered, tmin, hit_ref.getT());//trans---------------------------------
+            RayTree::AddTransmittedSegment(scattered, tmin, hit_ref.getT());
         }
         return color;
     }

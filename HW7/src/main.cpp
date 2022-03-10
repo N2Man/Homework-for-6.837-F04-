@@ -233,7 +233,6 @@ void renderFunction() {
     for (int i = 0; i < width; ++i) {
         for (int j = 0; j < height; ++j) {
             for (int n = 0; n < num_samples; ++n) {
-                //RayTracingStats::IncrementNumNonShadowRays();//----------------------------------------------
                 Vec2f offset = sampler->getSamplePosition(n);
                 float x = float(i + offset.x()) / float(width);
                 float y = float(j + offset.y()) / float(height);

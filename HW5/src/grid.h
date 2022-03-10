@@ -20,6 +20,6 @@ public:
     void initializeRayMarch(MarchingInfo& mi, const Ray& r, float tmin) const;
 
     int nx, ny, nz;
-    //std::vector<bool> opaque;
+
     vector<vector<Object3D*>> opaque;
 };
